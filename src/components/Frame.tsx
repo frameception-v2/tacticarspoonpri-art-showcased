@@ -22,17 +22,46 @@ import { createStore } from "mipd";
 import { Label } from "~/components/ui/label";
 import { PROJECT_TITLE } from "~/lib/constants";
 
-function ExampleCard() {
+function QuizCard({ currentStep, onAnswer, answers, score }: { 
+  currentStep: number;
+  onAnswer: (answerIndex: number) => void;
+  answers: number[];
+  score: number;
+}) {
+  const question = QUIZ_QUESTIONS[currentStep];
+  const isLastQuestion = currentStep === QUIZ_QUESTIONS.length - 1;
+  
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Welcome to the Frame Template</CardTitle>
+        <CardTitle>Maschine Capabilities Quiz</CardTitle>
         <CardDescription>
-          This is an example card that you can customize or remove
+          {currentStep + 1} of {QUIZ_QUESTIONS.length}
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <Label>Place content in a Card here.</Label>
+      <CardContent className="flex flex-col gap-4">
+        <h3 className="text-lg font-semibold">{question.question}</h3>
+        
+        <div className="flex flex-col gap-2">
+          {question.options.map((option, index) => (
+            <button
+              key={index}
+              onClick={() => onAnswer(index)}
+              className="p-2 border rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-left"
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+
+        {isLastQuestion && (
+          <div className="mt-4 p-2 bg-gray-100 dark:bg-gray-800 rounded">
+            <h4 className="font-semibold">Your Score: {score}/{QUIZ_QUESTIONS.length}</h4>
+            <p className="text-sm mt-1">
+              {RESULT_MESSAGES[Math.floor((score / QUIZ_QUESTIONS.length) * RESULT_MESSAGES.length)]}
+            </p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -41,6 +70,9 @@ function ExampleCard() {
 export default function Frame() {
   const [isSDKLoaded, setIsSDKLoaded] = useState(false);
   const [context, setContext] = useState<Context.FrameContext>();
+  const [currentStep, setCurrentStep] = useState(0);
+  const [answers, setAnswers] = useState<number[]>([]);
+  const [score, setScore] = useState(0);
 
   const [added, setAdded] = useState(false);
 
@@ -140,7 +172,32 @@ export default function Frame() {
         <h1 className="text-2xl font-bold text-center mb-4 text-gray-700 dark:text-gray-300">
           {PROJECT_TITLE}
         </h1>
-        <ExampleCard />
+        <QuizCard 
+          currentStep={currentStep}
+          onAnswer={(answerIndex) => {
+            const newAnswers = [...answers, answerIndex];
+            setAnswers(newAnswers);
+            
+            // Calculate score
+            const newScore = newAnswers.reduce((acc, answer, index) => {
+              return acc + (answer === QUIZ_QUESTIONS[index].correctAnswer ? 1 : 0);
+            }, 0);
+            setScore(newScore);
+
+            // Advance or reset quiz
+            if (currentStep < QUIZ_QUESTIONS.length - 1) {
+              setCurrentStep(step => step + 1);
+            } else {
+              setTimeout(() => {
+                setCurrentStep(0);
+                setAnswers([]);
+                setScore(0);
+              }, 3000);
+            }
+          }}
+          answers={answers}
+          score={score}
+        />
       </div>
     </div>
   );
